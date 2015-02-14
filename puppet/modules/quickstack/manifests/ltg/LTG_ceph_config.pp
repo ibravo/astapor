@@ -1,4 +1,4 @@
-# Class quickstack::ceph::LTG_ceph_config
+# Class quickstack::ltg::LTG_ceph_config
 #
 # Parameters:
 #   [*fsid*]                  - fsid in /etc/ceph/ceph.conf, e.g. a uuid from uuidgen
@@ -25,7 +25,7 @@
 
 
 
-class quickstack::ceph::LTG_ceph_config (
+class quickstack::ltg::LTG_ceph_config (
   $fsid                  = '',
   $mon_initial_members   = [ ],
   $mon_host              = [ ],
