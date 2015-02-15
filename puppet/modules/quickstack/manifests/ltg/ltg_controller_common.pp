@@ -1,5 +1,6 @@
 # Quickstack controller node
-class quickstack::ltg::LTG_controller_common (
+# Called from ???
+class quickstack::ltg::ltg_controller_common (
   $admin_email                   = $quickstack::params::admin_email,
   $admin_password                = $quickstack::params::admin_password,
   $ceilometer_metering_secret    = $quickstack::params::ceilometer_metering_secret,

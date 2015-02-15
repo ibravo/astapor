@@ -1,5 +1,6 @@
 # Quickstart Installation of Ceph Cluster
-class quickstack::ltg::LTG_ceph_install (
+# Calles ltg_controller_common to do the installation
+class quickstack::ltg::ltg_ceph_install (
   $admin_email                   = $quickstack::params::admin_email,
   $admin_password                = $quickstack::params::admin_password,
   $ceilometer_metering_secret    = $quickstack::params::ceilometer_metering_secret,
@@ -175,7 +176,7 @@ class quickstack::ltg::LTG_ceph_install (
 #    $sql_connection = "mysql://neutron:${neutron_db_password}@${mysql_host}/neutron"
 #  }
 
-  class { 'quickstack::ltg::LTG_controller_common':
+  class { 'quickstack::ltg::ltg_controller_common':
     admin_email                   => $admin_email,
     admin_password                => $admin_password,
     ceilometer_metering_secret    => $ceilometer_metering_secret,

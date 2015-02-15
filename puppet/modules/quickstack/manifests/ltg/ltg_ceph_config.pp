@@ -25,7 +25,7 @@
 
 
 
-class quickstack::ltg::LTG_ceph_config (
+class quickstack::ltg::ltg_ceph_config (
   $fsid                  = '',
   $mon_initial_members   = [ ],
   $mon_host              = [ ],
