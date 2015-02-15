@@ -1,5 +1,5 @@
-# Quickstart controller class for nova neutron (OpenStack Networking)
-class quickstack::neutron::controller (
+# Quickstart Installation of Ceph Cluster
+class quickstack::ltg::LTG_ceph_install (
   $admin_email                   = $quickstack::params::admin_email,
   $admin_password                = $quickstack::params::admin_password,
   $ceilometer_metering_secret    = $quickstack::params::ceilometer_metering_secret,
@@ -165,17 +165,17 @@ class quickstack::neutron::controller (
   $veth_mtu                      = $quickstack::params::veth_mtu,
 ) inherits quickstack::params {
 
-  if str2bool_i("$ssl") {
-    $qpid_protocol = 'ssl'
-    $amqp_port = '5671'
-    $sql_connection = "mysql://neutron:${neutron_db_password}@${mysql_host}/neutron?ssl_ca=${mysql_ca}"
-  } else {
-    $qpid_protocol = 'tcp'
-    $amqp_port = '5672'
-    $sql_connection = "mysql://neutron:${neutron_db_password}@${mysql_host}/neutron"
-  }
+#  if str2bool_i("$ssl") {
+#    $qpid_protocol = 'ssl'
+#    $amqp_port = '5671'
+#    $sql_connection = "mysql://neutron:${neutron_db_password}@${mysql_host}/neutron?ssl_ca=${mysql_ca}"
+#  } else {
+#    $qpid_protocol = 'tcp'
+#    $amqp_port = '5672'
+#    $sql_connection = "mysql://neutron:${neutron_db_password}@${mysql_host}/neutron"
+#  }
 
-  class { 'quickstack::controller_common':
+  class { 'quickstack::ltg::LTG_controller_common':
     admin_email                   => $admin_email,
     admin_password                => $admin_password,
     ceilometer_metering_secret    => $ceilometer_metering_secret,
@@ -289,117 +289,117 @@ class quickstack::neutron::controller (
     horizon_key                    => $horizon_key,
     amqp_nssdb_password            => $amqp_nssdb_password,
   }
-  ->
-  class { '::neutron':
-    enabled               => true,
-    verbose               => $verbose,
-    allow_overlapping_ips => true,
-    rpc_backend           => amqp_backend('neutron', $amqp_provider),
-    qpid_hostname         => $amqp_host,
-    qpid_port             => $amqp_port,
-    qpid_protocol         => $qpid_protocol,
-    qpid_username         => $amqp_username,
-    qpid_password         => $amqp_password,
-    rabbit_host           => $amqp_host,
-    rabbit_port           => $amqp_port,
-    rabbit_user           => $amqp_username,
-    rabbit_password       => $amqp_password,
-    rabbit_use_ssl        => $ssl,
-    core_plugin           => $neutron_core_plugin,
-    network_device_mtu    => $network_device_mtu,
-  }
-  ->
-  class { '::nova::network::neutron':
-    neutron_admin_password => $neutron_user_password,
-    security_group_api     => $security_group_api,
-  }
-  ->
-  class { '::neutron::server::notifications':
-    notify_nova_on_port_status_changes => true,
-    notify_nova_on_port_data_changes   => true,
-    nova_url                           => "http://${controller_priv_host}:8774/v2",
-    nova_admin_auth_url                => "http://${controller_priv_host}:35357/v2.0",
-    nova_admin_username                => "nova",
-    nova_admin_password                => "${nova_user_password}",
-  }
-  ->
+#  ->
+#  class { '::neutron':
+#    enabled               => true,
+#    verbose               => $verbose,
+#    allow_overlapping_ips => true,
+#    rpc_backend           => amqp_backend('neutron', $amqp_provider),
+#    qpid_hostname         => $amqp_host,
+#    qpid_port             => $amqp_port,
+#    qpid_protocol         => $qpid_protocol,
+#    qpid_username         => $amqp_username,
+#    qpid_password         => $amqp_password,
+#    rabbit_host           => $amqp_host,
+#    rabbit_port           => $amqp_port,
+#    rabbit_user           => $amqp_username,
+#    rabbit_password       => $amqp_password,
+#    rabbit_use_ssl        => $ssl,
+#    core_plugin           => $neutron_core_plugin,
+#    network_device_mtu    => $network_device_mtu,
+#  }
+#  ->
+#  class { '::nova::network::neutron':
+#    neutron_admin_password => $neutron_user_password,
+#    security_group_api     => $security_group_api,
+#  }
+#  ->
+#  class { '::neutron::server::notifications':
+#    notify_nova_on_port_status_changes => true,
+#    notify_nova_on_port_data_changes   => true,
+#    nova_url                           => "http://${controller_priv_host}:8774/v2",
+#    nova_admin_auth_url                => "http://${controller_priv_host}:35357/v2.0",
+#    nova_admin_username                => "nova",
+#    nova_admin_password                => "${nova_user_password}",
+#  }
+#  ->
   # FIXME: This really should be handled by the neutron-puppet module, which has
   # a review request open right now: https://review.openstack.org/#/c/50162/
   # If and when that is merged (or similar), the below can be removed.
-  exec { 'neutron-db-manage upgrade':
-    command     => 'neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini upgrade head',
-    path        => '/usr/bin',
-    user        => 'neutron',
-    logoutput   => 'on_failure',
-    before      => Service['neutron-server'],
-    require     => [Neutron_config['database/connection'], Neutron_config['DEFAULT/core_plugin']],
-  }
+#  exec { 'neutron-db-manage upgrade':
+#    command     => 'neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini upgrade head',
+#    path        => '/usr/bin',
+#    user        => 'neutron',
+#    logoutput   => 'on_failure',
+#    before      => Service['neutron-server'],
+#    require     => [Neutron_config['database/connection'], Neutron_config['DEFAULT/core_plugin']],
+#  }
 
-  class { '::neutron::server':
-    auth_host        => $::ipaddress,
-    auth_password    => $neutron_user_password,
-    connection       => $sql_connection,
-    sql_connection   => false,
-  }
+#  class { '::neutron::server':
+#    auth_host        => $::ipaddress,
+#    auth_password    => $neutron_user_password,
+#    connection       => $sql_connection,
+#    sql_connection   => false,
+#  }
 
-  if $neutron_core_plugin == 'neutron.plugins.ml2.plugin.Ml2Plugin' {
-
-    neutron_config {
-      'DEFAULT/service_plugins':
-        value => join(['neutron.services.l3_router.l3_router_plugin.L3RouterPlugin',]),
-    }
-    ->
-    class { '::neutron::plugins::ml2':
-      type_drivers          => $ml2_type_drivers,
-      tenant_network_types  => $ml2_tenant_network_types,
-      mechanism_drivers     => $ml2_mechanism_drivers,
-      flat_networks         => $ml2_flat_networks,
-      network_vlan_ranges   => $ml2_network_vlan_ranges,
-      tunnel_id_ranges      => $ml2_tunnel_id_ranges,
-      vxlan_group           => $ml2_vxlan_group,
-      vni_ranges            => $ml2_vni_ranges,
-      enable_security_group => str2bool_i("$ml2_security_group"),
-    }
+#  if $neutron_core_plugin == 'neutron.plugins.ml2.plugin.Ml2Plugin' {
+#
+#    neutron_config {
+#      'DEFAULT/service_plugins':
+#        value => join(['neutron.services.l3_router.l3_router_plugin.L3RouterPlugin',]),
+#    }
+#    ->
+#    class { '::neutron::plugins::ml2':
+#      type_drivers          => $ml2_type_drivers,
+#      tenant_network_types  => $ml2_tenant_network_types,
+#      mechanism_drivers     => $ml2_mechanism_drivers,
+#      flat_networks         => $ml2_flat_networks,
+#      network_vlan_ranges   => $ml2_network_vlan_ranges,
+#      tunnel_id_ranges      => $ml2_tunnel_id_ranges,
+#      vxlan_group           => $ml2_vxlan_group,
+#      vni_ranges            => $ml2_vni_ranges,
+#      enable_security_group => str2bool_i("$ml2_security_group"),
+#    }
 
     # If cisco nexus is part of ml2 mechanism drivers,
     # setup Mech Driver Cisco Neutron plugin class.
-    if ('cisco_nexus' in $ml2_mechanism_drivers) {
-      class { 'neutron::plugins::ml2::cisco::nexus':
-        nexus_config        => $nexus_config,
-      }
-    }
+#    if ('cisco_nexus' in $ml2_mechanism_drivers) {
+#      class { 'neutron::plugins::ml2::cisco::nexus':
+#        nexus_config        => $nexus_config,
+#      }
+#    }
   }
 
-  class {'quickstack::neutron::plugins::neutron_config':
-    neutron_conf_additional_params => $neutron_conf_additional_params,
-  }
+#  class {'quickstack::neutron::plugins::neutron_config':
+#    neutron_conf_additional_params => $neutron_conf_additional_params,
+#  }
  
-  class {'quickstack::neutron::plugins::nova_config':
-    nova_conf_additional_params => $nova_conf_additional_params,
-  }
+#  class {'quickstack::neutron::plugins::nova_config':
+#    nova_conf_additional_params => $nova_conf_additional_params,
+#  }
 
-  if $neutron_core_plugin == 'neutron.plugins.cisco.network_plugin.PluginV2' {
-    class { 'quickstack::neutron::plugins::cisco':
-      controller_priv_host         => $controller_priv_host,
-      cisco_vswitch_plugin         => $cisco_vswitch_plugin,
-      cisco_nexus_plugin           => $cisco_nexus_plugin,
-      controller_pub_host          => $controller_pub_host,
-      n1kv_vsm_ip                  => $n1kv_vsm_ip,
-      n1kv_vsm_password            => $n1kv_vsm_password,
-      n1kv_plugin_additional_params => $n1kv_plugin_additional_params,
-      neutron_db_password          => $neutron_db_password,
-      neutron_user_password        => $neutron_user_password,
-      neutron_core_plugin          => $neutron_core_plugin,
-      nexus_config                 => $nexus_config,
-      nexus_credentials            => $nexus_credentials,
-      mysql_host                   => $mysql_host,
-      mysql_ca                     => $mysql_ca,
-      ovs_vlan_ranges              => $ovs_vlan_ranges,
-      provider_vlan_auto_create    => $provider_vlan_auto_create,
-      provider_vlan_auto_trunk     => $provider_vlan_auto_trunk,
-      tenant_network_type          => $tenant_network_type,
-    }
-  }
+#  if $neutron_core_plugin == 'neutron.plugins.cisco.network_plugin.PluginV2' {
+#    class { 'quickstack::neutron::plugins::cisco':
+#      controller_priv_host         => $controller_priv_host,
+#      cisco_vswitch_plugin         => $cisco_vswitch_plugin,
+#      cisco_nexus_plugin           => $cisco_nexus_plugin,
+#      controller_pub_host          => $controller_pub_host,
+#      n1kv_vsm_ip                  => $n1kv_vsm_ip,
+#      n1kv_vsm_password            => $n1kv_vsm_password,
+#      n1kv_plugin_additional_params => $n1kv_plugin_additional_params,
+#      neutron_db_password          => $neutron_db_password,
+#      neutron_user_password        => $neutron_user_password,
+#      neutron_core_plugin          => $neutron_core_plugin,
+#      nexus_config                 => $nexus_config,
+#      nexus_credentials            => $nexus_credentials,
+#      mysql_host                   => $mysql_host,
+#      mysql_ca                     => $mysql_ca,
+#      ovs_vlan_ranges              => $ovs_vlan_ranges,
+#      provider_vlan_auto_create    => $provider_vlan_auto_create,
+#      provider_vlan_auto_trunk     => $provider_vlan_auto_trunk,
+#      tenant_network_type          => $tenant_network_type,
+#    }
+#  }
 
   firewall { '001 neutron server (API)':
     proto    => 'tcp',
