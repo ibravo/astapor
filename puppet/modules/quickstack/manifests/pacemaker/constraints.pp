@@ -152,7 +152,7 @@ class quickstack::pacemaker::constraints() {
     } else {
       quickstack::pacemaker::constraint::base_services{"base-then-glance-constr" :
         target_resource => "glance-registry-clone",
-      }     
+      }
     }
   }
 
@@ -166,7 +166,7 @@ class quickstack::pacemaker::constraints() {
     } else {
       quickstack::pacemaker::constraint::base_services{"base-then-cinder-constr" :
         target_resource => "cinder-api-clone",
-      }     
+      }
     }
   }
 
@@ -180,7 +180,7 @@ class quickstack::pacemaker::constraints() {
     } else {
       quickstack::pacemaker::constraint::base_services{"base-then-swift-constr" :
         target_resource => "swift-proxy-clone",
-      }     
+      }
     }
   }
 
@@ -194,21 +194,23 @@ class quickstack::pacemaker::constraints() {
     } else {
       quickstack::pacemaker::constraint::base_services{"base-then-nova-constr" :
         target_resource => "openstack-nova-consoleauth-clone",
-      }     
+      }
     }
   }
 
   if (str2bool_i(map_params('include_neutron'))) {
     if (str2bool_i(map_params('include_keystone'))) {
+      Quickstack::Pacemaker::Resource::Generic[neutron-server] ->
       quickstack::pacemaker::constraint::typical{ 'keystone-then-neutron-constr' :
         first_resource  => "keystone-clone",
         second_resource => "neutron-server-clone",
         colocation      => false,
       }
     } else {
+      Quickstack::Pacemaker::Resource::Generic[neutron-server] ->
       quickstack::pacemaker::constraint::base_services{"base-then-neutron-constr" :
         target_resource => "neutron-server-clone",
-      }     
+      }
     }
   }
 
@@ -224,7 +226,7 @@ class quickstack::pacemaker::constraints() {
       Quickstack::Pacemaker::Resource::Service['openstack-ceilometer-central'] ->
       quickstack::pacemaker::constraint::base_services{"base-then-ceilo-constr" :
         target_resource => "openstack-ceilometer-central",
-      }     
+      }
     }
     if (str2bool_i(map_params('include_nosql'))) {
       Quickstack::Pacemaker::Resource::Service['mongod'] ->

@@ -113,8 +113,11 @@ class quickstack::pacemaker::cinder(
     }
 
     if (str2bool_i("$backend_nfs")) {
-      $_volume_clone_opts = "interleave=true"
-      $_cinder_volume_resource_name = "cinder-volume-clone"
+      $_volume_clone_opts = undef
+      $_cinder_volume_resource_name = "cinder-volume"
+      # TODO: once cinder can work A/A, use the following values instead
+      # $_volume_clone_opts = "interleave=true"
+      # $_cinder_volume_resource_name = "cinder-volume-clone"
     } else {
       $_volume_clone_opts = undef
       $_cinder_volume_resource_name = "cinder-volume"

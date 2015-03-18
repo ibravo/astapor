@@ -9,6 +9,7 @@ class quickstack::neutron::all (
   $enable_tunneling              = true,
   $enabled                       = true,
   $external_network_bridge       = '',
+  $enable_vif_type_n1kv          = false,
   $database_max_retries          = '',
   $l3_ha                         = false,
   $manage_service                = true,
@@ -61,14 +62,14 @@ class quickstack::neutron::all (
                                     enable_sync_on_start => 'True',
                                     restrict_policy_profiles => 'False',
                                     },
-  $n1kv_ml2_plugin_additional_params = { default_policy_profile => 'default-pp',
-                                         default_vlan_network_profile => 'default-vlan-np',
-                                         default_vxlan_network_profile => 'default-vxlan-np',
-                                         poll_duration => '60',
-                                         http_pool_size => '4',
-                                         http_timeout => '15',
-                                         restrict_policy_profiles => 'False',
-                                         },
+  $n1kv_ml2_plugin_additional_params = {default_policy_profile => 'default-pp',
+                                        default_vlan_network_profile => 'default-vlan-np',
+                                        default_vxlan_network_profile => 'default-vxlan-np',
+                                        poll_duration => '60',
+                                        http_pool_size => '4',
+                                        http_timeout => '15',
+                                        restrict_policy_profiles => 'False',
+                                        },
   $n1kv_vsm_ip                   = undef,
   $n1kv_vsm_password             = undef,
   $n1kv_vsm_username             = undef,
@@ -132,19 +133,6 @@ class quickstack::neutron::all (
     verbose                 => $verbose,
     network_device_mtu      => $network_device_mtu,
   }
-  ->
-  # FIXME: This really should be handled by the neutron-puppet module, which has
-  # a review request open right now: https://review.openstack.org/#/c/50162/
-  # If and when that is merged (or similar), the below can be removed.
-  exec { 'neutron-db-manage upgrade':
-    command     => 'neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini upgrade head',
-    path        => '/usr/bin',
-    user        => 'neutron',
-    logoutput   => 'on_failure',
-    before      => Service['neutron-server'],
-    require     => [Neutron_config['database/connection'], Neutron_config['DEFAULT/core_plugin']],
-  }
-  File['/etc/neutron/plugin.ini'] -> Exec['neutron-db-manage upgrade']
 
   # short-term workaround for BZ 1181592
   package{'bind-utils': } ->
@@ -166,6 +154,8 @@ class quickstack::neutron::all (
     }
   }
 
+  anchor {'quickstack-neutron-server-first':}
+  ->
   class { '::neutron::server':
     auth_host                => $auth_host,
     auth_password            => $neutron_user_password,
@@ -178,8 +168,10 @@ class quickstack::neutron::all (
     manage_service           => str2bool_i("$manage_service"),
     max_l3_agents_per_router => $max_l3_agents_per_router,
     min_l3_agents_per_router => $min_l3_agents_per_router,
+    sync_db                  => true,
   }
-  contain neutron::server
+  ->
+  anchor {'quickstack-neutron-server-last':}
 
   if $neutron_core_plugin == 'neutron.plugins.ml2.plugin.Ml2Plugin' {
 
@@ -206,6 +198,7 @@ class quickstack::neutron::all (
         default_policy_profile               => $n1kv_ml2_plugin_additional_params[default_policy_profile],
         default_vlan_network_profile         => $n1kv_ml2_plugin_additional_params[default_vlan_network_profile],
         default_vxlan_network_profile        => $n1kv_ml2_plugin_additional_params[default_vxlan_network_profile],
+        enable_vif_type_n1kv                 => $enable_vif_type_n1kv,
         poll_duration                        => $n1kv_ml2_plugin_additional_params[poll_duration],
         http_pool_size                       => $n1kv_ml2_plugin_additional_params[http_pool_size],
         http_timeout                         => $n1kv_ml2_plugin_additional_params[http_timeout],
@@ -267,15 +260,23 @@ class quickstack::neutron::all (
     security_group_api     => $security_group_api,
   }
 
+  if $enable_vif_type_n1kv {
+    $_interface_driver = "neutron.agent.linux.interface.N1KVInterfaceDriver"
+  } else {
+    $_interface_driver = "neutron.agent.linux.interface.OVSInterfaceDriver"
+  }
+
   class { '::neutron::agents::dhcp':
-    enabled        => str2bool_i("$enabled"),
-    manage_service => str2bool_i("$manage_service"),
+    enabled          => str2bool_i("$enabled"),
+    manage_service   => str2bool_i("$manage_service"),
+    interface_driver => $_interface_driver,
   }
 
   class { '::neutron::agents::l3':
     enabled                 => str2bool_i("$enabled"),
     external_network_bridge => $external_network_bridge,
     manage_service          => str2bool_i("$manage_service"),
+    interface_driver        => $_interface_driver,
   }
 
   class { 'neutron::agents::metadata':
@@ -285,10 +286,6 @@ class quickstack::neutron::all (
     manage_service => str2bool_i("$manage_service"),
     metadata_ip    => $neutron_priv_host,
     shared_secret  => $neutron_metadata_proxy_secret,
-  }
-
-  neutron_config {
-    'DEFAULT/host': value => 'neutron-n-0';
   }
 
   include quickstack::neutron::notifications
